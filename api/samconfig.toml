@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "autocomplete-inference-api"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-18jkcpz2e0qzu"
+s3_prefix = "autocomplete-inference-api"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = ["AutocompleteInferenceFunction=644125965075.dkr.ecr.us-east-1.amazonaws.com/autocompleteinferenceapi61c12d64/autocompleteinferencefunctione333ffe3repo"]

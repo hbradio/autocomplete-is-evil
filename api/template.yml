@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 360
+    MemorySize: 2048
+
+Resources:
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: deployed
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'Authorization,Content-Type'"
+        AllowOrigin: "'*'"
+  AutocompleteInferenceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Architectures:
+        - x86_64
+      Events:
+        Inference:
+          Type: Api
+          Properties:
+            Path: /completion
+            Method: get
+            RestApiId:
+              Ref: ApiGateway
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: ./autocomplete-inference
+      DockerTag: python3.9-v1
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  AutocompleteInferenceApi:
+    Description: "API Gateway endpoint URL for Prod stage for the Autocomplete Inference function"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/deployed/completion/"
+  InferenceFunction:
+    Description: "Autocomplete Inference Lambda Function ARN"
+    Value: !GetAtt AutocompleteInferenceFunction.Arn
+  InferenceFunctionIamRole:
+    Description: "Implicit IAM Role created for the Autocomplete Inference function"
+    Value: !GetAtt AutocompleteInferenceFunction.Arn
