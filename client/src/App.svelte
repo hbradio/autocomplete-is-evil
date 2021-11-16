@@ -7,10 +7,10 @@
 
   let completion = "";
   let phrase = "Dear ";
+  $: lastSentence = phrase.replace(/&nbsp;/g, " ").split(/[\.!?;]/).pop();
   let showCopySuccess = false;
   let showModelInfo = false;
   let showQA = false;
-  let firstAutocompleteDone = false;
   let inputElement;
 
   const models = [
@@ -75,17 +75,18 @@
   }
 
   const fetchCompletion = debounce(1500, () => {
+    console.log(lastSentence);
+    if (lastSentence == '') {
+      return;
+    }
     completion = "...";
-    const uriPhrase = encodeURI(phrase);
+    const uriPhrase = encodeURI(lastSentence);
     fetch(
       `https://nedk6qxpi5.execute-api.us-east-1.amazonaws.com/deployed/completion?type=${model.id}&phrase=${uriPhrase}`
     )
       .then((response) => response.json())
       .then((data) => {
         completion = data.completion;
-        if (firstAutocompleteDone == false) {
-          setTimeout(() => (firstAutocompleteDone = true), 5000);
-        }
       });
   });
 
@@ -129,14 +130,16 @@
           <option value={m}>{m.label}</option>
         {/each}
       </select>
-      <h3>
-        Compose an email to a friend in the box below.
-      </h3>
+      <h3>Compose an email to a friend in the box below.</h3>
       <p>Press <em>enter</em> to accept suggestions.</p>
       <div class="email-area">
         <div class="dummy-input"><em>To: </em>my.friend@gmail.com</div>
         <div class="dummy-input"><em>Subject: </em>Hey, how's it going?</div>
-        <div class="composing-area" on:click={setCursor} style="margin-bottom: -50px;">
+        <div
+          class="composing-area"
+          on:click={setCursor}
+          style="margin-bottom: -50px;"
+        >
           <span
             bind:this={inputElement}
             contenteditable="true"
@@ -150,7 +153,10 @@
           {/if}
         </div>
       </div>
-      <button on:click={copyText} style="padding: 10px; position:relative; top: -20px; left: 10px">
+      <button
+        on:click={copyText}
+        style="padding: 10px; position:relative; top: -20px; left: 10px"
+      >
         {#if !showCopySuccess}
           <i class="gg-copy" />
         {/if}
@@ -161,104 +167,97 @@
     </section>
 
     <section class="info-column">
-      {#if firstAutocompleteDone}
-        <div transition:fade>
-          <h3>
-            What do the autocomplete suggestions sound like to you?
-          </h3>
-          <p>Can you guess what source text the model was trained on?</p>
-          {#if !showModelInfo}
-            <button on:click={() => (showModelInfo = true)}>Show me</button>
-          {/if}
-          {#if showModelInfo}
-            <button on:click={() => (showModelInfo = false)}>Hide info</button
-            >
-          {/if}
-          {#if showModelInfo}
-            <div transition:fade>
-              <p>
-                Autocomplete <em>{model.label}</em> was generated from
-                <a href={model.link}>{model.description}</a>.
-              </p>
-            </div>
-          {/if}
-        </div>
-      {/if}
+      <div transition:fade>
+        <h3>What do the autocomplete suggestions sound like to you?</h3>
+        <p>Can you guess what source text the model was trained on?</p>
+        {#if !showModelInfo}
+          <button on:click={() => (showModelInfo = true)}>Show me</button>
+        {/if}
+        {#if showModelInfo}
+          <button on:click={() => (showModelInfo = false)}>Hide info</button>
+        {/if}
+        {#if showModelInfo}
+          <div transition:fade>
+            <p>
+              Autocomplete <em>{model.label}</em> was generated from
+              <a href={model.link}>{model.description}</a>.
+            </p>
+          </div>
+        {/if}
+      </div>
     </section>
   </div>
-  {#if firstAutocompleteDone}
-    <section transition:fade style="text-align:center">
-      <h2>What is all this?</h2>
-      {#if !showQA}
-        <button on:click={() => (showQA = true)}>Show Q&A</button>
-      {/if}
-      {#if showQA}
-        <button on:click={() => (showQA = false)}>Hide Q&A</button>
-      {/if}
-      {#if showQA}
-        <div transition:fade class="qa">
-          <h3>What's your point here?</h3>
-          <p>I think text autocomplete is low-grade mind control.</p>
-          <h3>Mind control? Isn't that a little dramatic?</h3>
-          <p>
-            Gmail <a
-              href="https://www.blog.google/products/gmail/subject-write-emails-faster-smart-compose-gmail/"
-            >
-              suddenly starting finishing the thoughts</a
-            >
-            of its
-            <a
-              href="https://www.cnbc.com/2019/10/26/gmail-dominates-consumer-email-with-1point5-billion-users.html"
-            >
-              1.5 billion users</a
-            >. It's hard to be hyperbolic when talking about something running at
-            that scale.
-          </p>
-          <h3>
-            But Google says that Gmail's suggestions personalized to me. Aren't
-            they based on what I've written in the past?
-          </h3>
-          <p>Would you know if they weren't?</p>
-          <h3>
-            But creating an autocomplete model requires special expertise and
-            careful use of advanced technology, right?
-          </h3>
-          <p>
-            Not really. I've studied machine learning, but I'm not a deep learning
-            guru. I made these autocomplete models by copying <a
-              href="https://colab.research.google.com/github/yashk2810/tensorflow/blob/005799649aae3fe4a01a8e69cf88ebbcd86ca8f0/tensorflow/contrib/eager/python/examples/generative_examples/text_generation.ipynb"
-            >
-              a recursive neural network tutorial from Google.</a
-            >
-            using a pretty standard gaming PC.
-            <a
-              href="https://www.technologyreview.com/2020/07/20/1005454/openai-machine-learning-language-generator-gpt-3-nlp/"
-              >The really advanced stuff</a
-            > is much more powerful.
-          </p>
-          <h3>What should I do?</h3>
-          <p>
-            <a
-              href="https://support.google.com/mail/answer/9116836?hl=en&co=GENIE.Platform%3DDesktop"
-              >Turn off Smart Compose in Gmail</a
-            >. Think your own thoughts.
-          </p>
-          <h3>Can we chat?</h3>
-          <p>Sure! Email me: brady.hurlburt [at] pm.me</p>
-          <h3>Can I see the code?</h3>
-          <p>
-            <a href="https://github.com/hbradio/autocomplete-is-evil">Sure!</a>
-          </p>
-        </div>
-      {/if}
-    </section>
-  {/if}
+  <section transition:fade style="text-align:center">
+    <h2>What is all this?</h2>
+    {#if !showQA}
+      <button on:click={() => (showQA = true)}>Show Q&A</button>
+    {/if}
+    {#if showQA}
+      <button on:click={() => (showQA = false)}>Hide Q&A</button>
+    {/if}
+    {#if showQA}
+      <div transition:fade class="qa">
+        <h3>What's your point here?</h3>
+        <p>I think text autocomplete is low-grade mind control.</p>
+        <h3>Mind control? Isn't that a little dramatic?</h3>
+        <p>
+          Gmail <a
+            href="https://www.blog.google/products/gmail/subject-write-emails-faster-smart-compose-gmail/"
+          >
+            suddenly starting finishing the thoughts</a
+          >
+          of its
+          <a
+            href="https://www.cnbc.com/2019/10/26/gmail-dominates-consumer-email-with-1point5-billion-users.html"
+          >
+            1.5 billion users</a
+          >. It's hard to be hyperbolic when talking about something running at
+          that scale.
+        </p>
+        <h3>
+          But Google says that Gmail's suggestions are personalized to me. Aren't
+          they based on what I've written in the past?
+        </h3>
+        <p>Would you know if they weren't?</p>
+        <h3>
+          But creating an autocomplete model requires special expertise and
+          careful use of advanced technology, right?
+        </h3>
+        <p>
+          Not really. I've studied machine learning, but I'm not a deep learning
+          guru. I made these autocomplete models by copying <a
+            href="https://colab.research.google.com/github/yashk2810/tensorflow/blob/005799649aae3fe4a01a8e69cf88ebbcd86ca8f0/tensorflow/contrib/eager/python/examples/generative_examples/text_generation.ipynb"
+          >
+            a recursive neural network tutorial from Google</a
+          >
+          using a pretty standard gaming PC.
+          <a
+            href="https://www.technologyreview.com/2020/07/20/1005454/openai-machine-learning-language-generator-gpt-3-nlp/"
+            >The really advanced stuff</a
+          > is much more powerful.
+        </p>
+        <h3>What should I do?</h3>
+        <p>
+          <a
+            href="https://support.google.com/mail/answer/9116836?hl=en&co=GENIE.Platform%3DDesktop"
+            >Turn off Smart Compose in Gmail</a
+          >. Think your own thoughts.
+        </p>
+        <h3>Can we chat?</h3>
+        <p>Sure! Email me: brady.hurlburt [at] pm.me</p>
+        <h3>Can I see the code?</h3>
+        <p>
+          <a href="https://github.com/hbradio/autocomplete-is-evil">Sure!</a>
+        </p>
+      </div>
+    {/if}
+  </section>
 </main>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@700&family=Roboto&display=swap');
+  @import url("https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@700&family=Roboto&display=swap");
   main {
-    font-family: 'Roboto', sans-serif;
+    font-family: "Roboto", sans-serif;
     max-width: 1400px;
     margin: 0 auto;
     padding-bottom: 100px;
@@ -266,29 +265,30 @@
 
   p {
     margin-top: 0.4em;
-    line-height: 1.5em;
+    line-height: 1.3em;
   }
 
-  h1, h2, h3 {
-    font-family: 'Balsamiq Sans', cursive;
+  h1,
+  h2,
+  h3 {
+    font-family: "Balsamiq Sans", cursive;
     margin-top: 0.6em;
     margin-bottom: 0.2em;
   }
 
   h3 {
-    font-size: 1.6em;
+    font-size: 1.4em;
     margin-bottom: 0.1em;
   }
 
   h2 {
-    font-size: 3.0em;
+    font-size: 2.6em;
   }
 
   h1 {
-    font-size: 3.8em;
-    text-shadow: -10px 10px 0px #e7e7e755,
-                 -20px 20px 0px #c0c0c055,
-                 -30px 30px 0px #9b9b9b55;
+    font-size: 3.4em;
+    text-shadow: -10px 10px 0px #e7e7e755, -20px 20px 0px #c0c0c055,
+      -30px 30px 0px #9b9b9b55;
   }
 
   header {
@@ -296,7 +296,8 @@
     margin-bottom: 1em;
   }
 
-  button, select {
+  button,
+  select {
     font-size: 1.2em;
   }
 
